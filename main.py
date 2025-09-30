@@ -12,41 +12,11 @@ intents.reactions = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-WELCOME_CHANNEL_ID = 1377854642146512979
-GOODBYE_CHANNEL_ID = 1377864337481535508
-STATIC_CHANNEL_ID = 1381133461758410823
+WELCOME_CHANNEL_ID = 1395513277186052156
+GOODBYE_CHANNEL_ID = 1395513302561591366
+STATIC_CHANNEL_ID = 1422712247695708191
 REACTION_ROLE_MESSAGES = []
 
-REACTION_ROLE_SECTIONS = [
-    {
-        "description": "PRONOUNS:",
-        "roles": {
-            "1️⃣": (1379207563744252055, "1️⃣ She/Her"),
-            "2️⃣": (1379207622590201947, "2️⃣ He/Him"),
-            "3️⃣": (1379207671202451497, "3️⃣ They/Them"),
-            "4️⃣": (1379207704953753621, "4️⃣ It/Its"),
-            "5️⃣": (1379207731327537223, "5️⃣ Any/All"),
-            "6️⃣": (1379207767235104920, "6️⃣ Ask"),
-        }
-    },
-    {
-        "description": "AGE:",
-        "roles": {
-            "🔽": (1379463817259384904, "🔽 16+"),
-            "🔼": (1379463866077020160, "🔼 18+"),
-        }
-    },
-    {
-        "description": "DM AND PING STATUS:",
-        "roles": {
-            "⏮️": (1378406719058874378, "⏮️ Do Not Ping"),
-            "⏭️": (1378406657360662579, "⏭️ Pings OK"),
-            "❌": (1378406591996366899, "❌ DMs Closed"),
-            "⭕": (1378406509142216764, "⭕ Open DMs"),
-            "⛔": (1378406437742710784, "⛔ Ask To DM"),
-        }
-    }
-]
 
 FREQUENCY_CODES = [
     "4912-03-77", "8301-12-65", "1279-56-84", "6203-88-91", "5409-22-11",
@@ -61,9 +31,9 @@ GOODBYE_VARIANTS = [
     {"last_seen": "Signal terminated mid-transmission", "notes": "Encryption failed. Contents unrecoverable."},
     {"last_seen": "Emergency airlock access triggered", "notes": "We warned them not to open that door."},
     {"last_seen": "Final ping from quarantine zone", "notes": "Exposure protocol enacted too late."},
-    {"last_seen": "Security override near the cryo bay", "notes": "Left without triggering thaw sequence."},
-    {"last_seen": "Near the experimental core housing", "notes": "Exposure time exceeded safe limits."},
-    {"last_seen": "Trail vanished by the reactor vents", "notes": "Nobody volunteers for that route."},
+    {"last_seen": "Range book signed off", "notes": "Final qualification stamped. Weapon left clean."},
+    {"last_seen": "Set off perimeter alarm, sector Bravo-2", "notes": "Guard detail responded, no breach located. Alarm reset."},
+    {"last_seen": "Walking past the motor pool fence line", "notes": "Nobody volunteers for that route."},
     {"last_seen": "Corridor 13B — off-limits for a reason", "notes": "We really need to start locking doors."},
     {"last_seen": "Purging personal records", "notes": "Who would go looking?"},
     {"last_seen": "Exploding.", "notes": "Thanks for the mess."}
@@ -176,7 +146,7 @@ async def send_welcome_message(member):
         )
         await channel.send(embed=embed)
 
-@tasks.loop(minutes=25)
+@tasks.loop(minutes=60)
 async def send_static_message():
     channel = bot.get_channel(STATIC_CHANNEL_ID)
     if not channel:
