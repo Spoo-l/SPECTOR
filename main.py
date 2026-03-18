@@ -12,10 +12,22 @@ intents.reactions = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-WELCOME_CHANNEL_ID = 1395513277186052156
-GOODBYE_CHANNEL_ID = 1395513302561591366
-STATIC_CHANNEL_ID = 1422712247695708191
+WELCOME_CHANNELS = {}
+GOODBYE_CHANNELS = {}
+STATIC_CHANNELS = {}
 REACTION_ROLE_MESSAGES = []
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setwelcome(ctx, channel: discord.TextChannel):
+    welcome_channels[ctx.guild.id] = channel.id
+    await ctx.send(f"Welcome channel set to {channel.mention}")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setgoodbye(ctx, channel: discord.TextChannel):
+    goodbye_channels[ctx.guild.id] = channel.id
+    await ctx.send(f"Goodbye channel set to {channel.mention}")
 
 
 FREQUENCY_CODES = [
@@ -114,37 +126,33 @@ async def on_raw_reaction_remove(payload):
                 await member.remove_roles(role)
                 break
 
-async def send_goodbye_message(member):
-    channel = bot.get_channel(GOODBYE_CHANNEL_ID)
-    if channel:
-        variant = random.choice(GOODBYE_VARIANTS)
-        embed = discord.Embed(
-            title=f"DEPARTURE: {member.display_name or member.name}",
-            description=(
-                f"**STATUS:** Lost Signal\n"
-                f"**LAST SEEN:** {variant['last_seen']}\n\n"
-                f"**NOTES:** {variant['notes']}"
-            ),
-            color=discord.Color.dark_gray()
-        )
-        await channel.send(embed=embed)
+async def send_goodbye_message(member, channel):
+    variant = random.choice(GOODBYE_VARIANTS)
+    embed = discord.Embed(
+        title=f"DEPARTURE: {member.display_name or member.name}",
+        description=(
+            f"**STATUS:** Lost Signal\n"
+            f"**LAST SEEN:** {variant['last_seen']}\n\n"
+            f"**NOTES:** {variant['notes']}"
+        ),
+        color=discord.Color.dark_gray()
+    )
+    await channel.send(embed=embed)
 
-async def send_welcome_message(member):
-    channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    if channel:
-        freq_code = random.choice(FREQUENCY_CODES)
-        embed = discord.Embed(
-            title="REPORT:",
-            description=(
-                "**STATUS:** New Signal Detected\n"
-                "**LOADING. . .**\n\n"
-                f"**IDENTIFIED CONTACT:**\n{member.mention}\n\n"
-                f"**FREQUENCY CODE**: {freq_code}\n"
-                "**NOTES:** Read the handbook, friend"
-            ),
-            color=discord.Color.red()
-        )
-        await channel.send(embed=embed)
+async def send_welcome_message(member, channel):
+    freq_code = random.choice(FREQUENCY_CODES)
+    embed = discord.Embed(
+        title="REPORT:",
+        description=(
+            "**STATUS:** New Signal Detected\n"
+            "**LOADING. . .**\n\n"
+            f"**IDENTIFIED CONTACT:**\n{member.mention}\n\n"
+            f"**FREQUENCY CODE**: {freq_code}\n"
+            "**NOTES:** Read the handbook, friend"
+        ),
+        color=discord.Color.red()
+    )
+    await channel.send(embed=embed)
 
 @tasks.loop(minutes=60)
 async def send_static_message():
