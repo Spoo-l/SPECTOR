@@ -1,4 +1,3 @@
-
 import asyncio
 import json
 import os
@@ -22,13 +21,11 @@ bot = commands.Bot(
     help_command=None
 )
 
-
 CORRUPTED_ROLE_ID = 1483657249393213470
 VC_PING_ROLE_ID = 1483651256433250537
 DEAD_CHAT_ROLE_ID = 1483652493798801419
 PINGS_OK_ROLE_ID = 1483654707175096400
 NO_PINGS_ROLE_ID = 1483654795393896489
-
 
 guild_config = {}
 REACTION_ROLE_MESSAGES = []
@@ -116,7 +113,6 @@ def get_guild_settings(guild_id: int) -> dict:
         }
     return guild_config[gid]
 
-
 def format_blockquote_code(text: str) -> str:
     lines = text.splitlines()
     formatted_lines = [f"> `{line}`" if line.strip() else ">" for line in lines]
@@ -158,7 +154,6 @@ async def remove_corruption_later(member: discord.Member, delay: int = 900):
         except discord.HTTPException as e:
             print(f"Error removing corrupted role: {e}")
 
-
 def make_help_embed() -> discord.Embed:
     embed = discord.Embed(
         title="COMMAND DIRECTORY",
@@ -166,56 +161,16 @@ def make_help_embed() -> discord.Embed:
         color=discord.Color.dark_red()
     )
 
-    embed.add_field(
-        name="!help",
-        value="Shows this command list.",
-        inline=False
-    )
-    embed.add_field(
-        name="!setwelcome #channel",
-        value="Admin only. Sets where join messages are sent.",
-        inline=False
-    )
-    embed.add_field(
-        name="!setgoodbye #channel",
-        value="Admin only. Sets where leave messages are sent.",
-        inline=False
-    )
-    embed.add_field(
-        name="!setstatic #channel",
-        value="Admin only. Sets where static broadcasts are sent.",
-        inline=False
-    )
-    embed.add_field(
-        name="!setup_reactions",
-        value="Admin only. Posts the reaction-role messages.",
-        inline=False
-    )
-    embed.add_field(
-        name="!pingvc",
-        value="Pings the VC role.",
-        inline=False
-    )
-    embed.add_field(
-        name="!pingdead",
-        value="Pings the dead chat role.",
-        inline=False
-    )
-    embed.add_field(
-        name="!testjoin",
-        value="Sends a test welcome message in the current channel.",
-        inline=False
-    )
-    embed.add_field(
-        name="!testleave",
-        value="Sends a test goodbye message in the current channel.",
-        inline=False
-    )
-    embed.add_field(
-        name="!teststatic",
-        value="Sends a test static message in the current channel.",
-        inline=False
-    )
+    embed.add_field(name="!help", value="Shows this command list.", inline=False)
+    embed.add_field(name="!setwelcome #channel", value="Admin only. Sets where join messages are sent.", inline=False)
+    embed.add_field(name="!setgoodbye #channel", value="Admin only. Sets where leave messages are sent.", inline=False)
+    embed.add_field(name="!setstatic #channel", value="Admin only. Sets where static broadcasts are sent.", inline=False)
+    embed.add_field(name="!setup_reactions", value="Admin only. Posts the reaction-role messages.", inline=False)
+    embed.add_field(name="!pingvc", value="Pings the VC role.", inline=False)
+    embed.add_field(name="!pingdead", value="Pings the dead chat role.", inline=False)
+    embed.add_field(name="!testjoin", value="Tests the saved welcome channel.", inline=False)
+    embed.add_field(name="!testleave", value="Tests the saved goodbye channel.", inline=False)
+    embed.add_field(name="!teststatic", value="Tests the saved static channel.", inline=False)
     embed.add_field(
         name="Automatic stuff",
         value=(
@@ -299,7 +254,6 @@ async def send_static_payload(channel: discord.TextChannel):
     else:
         await channel.send(format_blockquote_code(static_message))
 
-
 @bot.event
 async def on_ready():
     load_config()
@@ -361,36 +315,38 @@ async def on_message(message):
 
 @bot.event
 async def on_member_join(member: discord.Member):
+    print(f"JOIN EVENT FIRED: {member} in {member.guild.name}")
+
     settings = get_guild_settings(member.guild.id)
     channel_id = settings.get("welcome_channel_id")
 
     if not channel_id:
+        print("No welcome channel set.")
         return
 
     channel = member.guild.get_channel(channel_id)
+    print(f"Welcome channel lookup: {channel}")
+
     if isinstance(channel, discord.TextChannel):
         await send_welcome_message(member, channel)
 
 
 @bot.event
-async def on_raw_member_remove(payload: discord.RawMemberRemoveEvent):
-    guild = bot.get_guild(payload.guild_id)
-    if guild is None:
-        return
+async def on_member_remove(member: discord.Member):
+    print(f"LEAVE EVENT FIRED: {member} in {member.guild.name}")
 
-    settings = get_guild_settings(guild.id)
+    settings = get_guild_settings(member.guild.id)
     channel_id = settings.get("goodbye_channel_id")
 
     if not channel_id:
+        print("No goodbye channel set.")
         return
 
-    channel = guild.get_channel(channel_id)
-    if not isinstance(channel, discord.TextChannel):
-        return
+    channel = member.guild.get_channel(channel_id)
+    print(f"Goodbye channel lookup: {channel}")
 
-    user = payload.user
-    display_name = getattr(user, "display_name", None) or user.name
-    await send_goodbye_message_from_name(display_name, channel)
+    if isinstance(channel, discord.TextChannel):
+        await send_goodbye_message(member, channel)
 
 
 @bot.event
@@ -576,17 +532,51 @@ async def pingdead(ctx):
 
 @bot.command()
 async def testjoin(ctx):
-    await send_welcome_message(ctx.author, ctx.channel)
+    settings = get_guild_settings(ctx.guild.id)
+    channel_id = settings.get("welcome_channel_id")
+
+    if not channel_id:
+        return await ctx.send("No welcome channel is set.")
+
+    channel = ctx.guild.get_channel(channel_id)
+    if not isinstance(channel, discord.TextChannel):
+        return await ctx.send("Saved welcome channel could not be found.")
+
+    await send_welcome_message(ctx.author, channel)
+    await ctx.send(f"Sent test welcome message to {channel.mention}")
 
 
 @bot.command()
 async def testleave(ctx):
-    await send_goodbye_message(ctx.author, ctx.channel)
+    settings = get_guild_settings(ctx.guild.id)
+    channel_id = settings.get("goodbye_channel_id")
+
+    if not channel_id:
+        return await ctx.send("No goodbye channel is set.")
+
+    channel = ctx.guild.get_channel(channel_id)
+    if not isinstance(channel, discord.TextChannel):
+        return await ctx.send("Saved goodbye channel could not be found.")
+
+    await send_goodbye_message(ctx.author, channel)
+    await ctx.send(f"Sent test goodbye message to {channel.mention}")
 
 
 @bot.command()
 async def teststatic(ctx):
-    await send_static_payload(ctx.channel)
+    settings = get_guild_settings(ctx.guild.id)
+    channel_id = settings.get("static_channel_id")
+
+    if not channel_id:
+        return await ctx.send("No static channel is set.")
+
+    channel = ctx.guild.get_channel(channel_id)
+    if not isinstance(channel, discord.TextChannel):
+        return await ctx.send("Saved static channel could not be found.")
+
+    await send_static_payload(channel)
+    await ctx.send(f"Sent test static message to {channel.mention}")
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -601,6 +591,7 @@ async def on_command_error(ctx, error):
     else:
         print(f"Unhandled command error: {error}")
         await ctx.send("Something broke. Check the console.")
+
 
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN is missing.")
